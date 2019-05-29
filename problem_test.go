@@ -1,9 +1,7 @@
 package problem_test
 
 import (
-	"bytes"
 	"errors"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -11,7 +9,6 @@ import (
 	"testing"
 
 	"code.soquee.net/problem"
-	"code.soquee.net/testlog"
 )
 
 var errResponderTestCases = [...]struct {
@@ -52,7 +49,7 @@ func TestErrorResponder(t *testing.T) {
 			if tc.writeCode != 0 {
 				recorder.WriteHeader(tc.writeCode)
 			}
-			problem.NewResponder(testlog.New(t))(recorder, req, tc.err)
+			problem.NewResponder()(recorder, req, tc.err)
 
 			contentType := recorder.Header().Get("Content-Type")
 			if tc.method == "HEAD" && contentType != "" {
@@ -75,13 +72,12 @@ func (unmarshalableErrType) Error() string {
 }
 
 func TestErrorResponderBadEncode(t *testing.T) {
-	b := new(bytes.Buffer)
-	problem.NewResponder(log.New(b, "", 0))(
+	err := problem.NewResponder()(
 		httptest.NewRecorder(),
 		httptest.NewRequest("GET", "/", nil),
 		make(unmarshalableErrType))
 
-	if b.Len() == 0 {
-		t.Errorf("Expected error responder to log errors encountered during marshaling")
+	if err == nil {
+		t.Errorf("Expected error responder to return errors encountered during marshaling")
 	}
 }

@@ -3,7 +3,7 @@ package problem // import "code.soquee.net/problem"
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 )
 
@@ -55,8 +55,8 @@ func (p Problem) Error() string {
 // If the HTTPStatus method returns 0, no status code is written and the user
 // must write one elsewhere.
 // If the error value is nil, a 200 is returned.
-func NewResponder(logger *log.Logger) func(http.ResponseWriter, *http.Request, error) {
-	return func(w http.ResponseWriter, req *http.Request, err error) {
+func NewResponder() func(http.ResponseWriter, *http.Request, error) error {
+	return func(w http.ResponseWriter, req *http.Request, err error) error {
 		if req.Method != "HEAD" {
 			w.Header().Set("Content-Type", "application/json")
 		}
@@ -72,7 +72,7 @@ func NewResponder(logger *log.Logger) func(http.ResponseWriter, *http.Request, e
 			w.WriteHeader(status.HTTPStatus())
 		case err == nil:
 			w.WriteHeader(200)
-			return
+			return nil
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -80,8 +80,9 @@ func NewResponder(logger *log.Logger) func(http.ResponseWriter, *http.Request, e
 		if req.Method != "HEAD" {
 			err = json.NewEncoder(w).Encode(err)
 			if err != nil {
-				logger.Printf("Error encoding JSON error: %q\n", err)
+				return fmt.Errorf("error encoding JSON error: %q", err)
 			}
 		}
+		return nil
 	}
 }
